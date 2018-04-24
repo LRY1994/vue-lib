@@ -29,6 +29,7 @@ export default {
             })
         },
         handleBlur() {
+            debugger
             let params = {
                 item: this.item,
                 value: this.model
@@ -51,11 +52,19 @@ export default {
         },
         validate() {
             const descriptor = {};
-            let rules = [...this.rules];
-            if (rules && rules.length > 0) {
-                rules.forEach(rule => {
-                    delete rule.trigger;
+            let rules = [];
+            if (this.rules && this.rules.length > 0) {
+                this.rules.forEach(rule => {
+                    let tmp = {};
+                    Object.keys(rule).forEach(key => {
+                        if (key != 'trigger') {
+                            tmp[key] = rule[key];
+                        }
+                    });
+                    rules.push(tmp);
                 });
+            } else {
+                return Promise.resolve(true);
             }
             descriptor[this.prop] = rules;
             const validator = new AsyncValidator(descriptor);

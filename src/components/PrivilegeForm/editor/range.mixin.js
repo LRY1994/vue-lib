@@ -10,6 +10,9 @@ export default {
             return value;
         },
         handleChange() {
+            this.encodeUpdateChange();
+        },
+        encodeUpdateChange() {
             let value = this.calcValue();
 
             // 通知上级form
@@ -27,13 +30,13 @@ export default {
                     this.decode(data);
 
                     // 初始化通知上级form
-                    this.handleChange();
+                    this.encodeUpdateChange();
                 }
             })
         },
         handleBlur() {
             // 通知上级更改
-            this.handleChange();
+            this.encodeUpdateChange();
 
             let value = this.calcValue();
 

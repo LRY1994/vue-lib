@@ -1,10 +1,13 @@
 <template>
     <el-form-item v-if="display" :label="label" :prop="prop" :rules="rules" :ref="formItemRef">
-        <el-select v-model="model" @change="handleChange" :disabled="disabled">
+        <div v-if="disabled" class="plain">{{plainValue}}</div>
+        <el-select v-else v-model="model" @change="handleChange">
             <el-option v-for="i in options" :key="i.value" :label="i.label" :value="i.value">
             </el-option>
         </el-select>
-        <slot></slot>
+        <div v-show="!disabled">
+            <slot></slot>
+        </div>
     </el-form-item>
 </template>
 
@@ -22,6 +25,25 @@
                 // 触发blur回调
                 this.handleBlur();
             }
-        }
+        },
+        computed: {
+            plainValue() {
+                let result = '';
+                this.options.forEach(item => {
+                    if (item.value == this.model) {
+                        result = item.label;
+                    }
+                });
+                return result;
+            }
+        },
     }
 </script>
+
+<style lang="scss" scoped>
+    .plain {
+        padding: 0 10px;
+        border: 1px solid #eee;
+        min-height: 42px;
+    }
+</style>

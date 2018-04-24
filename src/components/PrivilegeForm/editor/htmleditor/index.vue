@@ -1,9 +1,12 @@
 <template>
     <el-form-item v-if="display" :label="label" :prop="prop" :rules="rules" :ref="formItemRef">
         <div class="htmleditor">
-            <el-tabs value="first" type="border-card">
+            <div class="htmleditor-content plain" v-if="disabled">
+                <div v-html="model"></div>
+            </div>
+            <el-tabs v-else value="first" type="border-card">
                 <el-tab-pane label="编写" name="first">
-                    <quill-editor :id="prop" class="my-html-editor" :options="quillOptions" @change="handleChange" @focus="handleFocus" v-model="model" @blur="handleEditorBlur" :disabled="disabled">
+                    <quill-editor :id="prop" class="my-html-editor" :options="quillOptions" @change="handleChange" @focus="handleFocus" v-model="model" @blur="handleEditorBlur">
                     </quill-editor>
                 </el-tab-pane>
                 <el-tab-pane label="预览" name="second">
@@ -13,7 +16,9 @@
                 </el-tab-pane>
             </el-tabs>
         </div>
-        <slot></slot>
+        <div v-show="!disabled">
+            <slot></slot>
+        </div>
     </el-form-item>
 </template>
 
@@ -34,14 +39,14 @@
                 isFocused: false,
                 quillOptions: {
                     modules: {
-                        toolbar:  [['bold', 'italic', 'underline', 'strike'],[{ 'header': 2 }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['image', 'video'], ['clean']]
+                        toolbar:  [['bold', 'italic', 'underline', 'strike'],[{ 'header': 2 }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['image'], ['clean']]
                     }
                 }
             }
         },
         methods: {
             handleChange(content) {
-                if (content && content.html) {
+                if (content) {
                     this.emitChange(content.html);
                 }
             },
@@ -52,6 +57,7 @@
             },
             handleEditorBlur() {
                 if (this.isFocused) {
+                    this.$refs[this.formItemRef].validate('blur');
                     this.handleBlur();
                 };
                 this.isFocused = false;
@@ -65,6 +71,7 @@
 
     .htmleditor-content {
         padding: 20px;
+        word-wrap: break-word;
         @include htmleditor-content;
     }
 
@@ -75,6 +82,11 @@
     .my-html-editor {
         @extend .overflow-visible;
         padding-bottom: 30px;
+    }
+
+    .plain {
+        border: 1px solid #eee;
+        min-height: 42px;
     }
 </style>
 

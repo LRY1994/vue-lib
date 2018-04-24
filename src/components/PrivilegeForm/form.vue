@@ -1,40 +1,7 @@
-<!--
-<awesome-form  :items="items" :config="config"></awesome-form>
-props:
-    items {Array,必选}
-    config{Array,必选}
-        例如
-        config: [{
-                editor: ['*'],
-                detail: {
-                    genDisabled: dynamicGenDisabled('tenant_' + this.currentDisabledScope),
-                    genDisplay: dynamicGenDisplay('tenant_' + this.currentVisibleScope)
-                }
-            }, {
-                editor: ['input', 'textarea', 'daterange', 'timerange', 'check', 'radio', 'select'],
-                detail: {
-                    setter: this.plainSetterPromisory,
-                }
-            }, {
-                editor: ['image'],
-                detail: {
-                    getter: this.imageGetterPromisory,
-                    setter: this.imageSetterPromisory
-                }
-            }]
-
-    basic{Object,可选}
--->
-
 <template>
-    <div>{{form}}
-        <el-form class="my-form" :model="form" v-if="form && sortedItems && configForEditor" 
-        ref="form" label-width="150px" label-position="left">
-            <slot v-if="item.editor == basic.keys.slotEditor"
-                  v-for="item in sortedItems"
-                  :name="item[basic.keys.slotNameKey]" 
-                  :item="item" :form="form">
-            </slot>
+    <div>
+        <el-form class="my-form" :model="form" v-if="form && sortedItems && configForEditor" ref="form" label-width="150px" label-position="left">
+            <slot v-for="item in sortedItems" v-if="item.editor == basic.keys.slotEditor" :name="item[basic.keys.slotNameKey]" :item="item" :form="form"></slot>
             <component v-else 
                 :is="basic.editorDict[item.editor] || item.editor" 
                 :item="item" 
@@ -43,7 +10,7 @@ props:
                 :label="item[basic.keys.labelKey]"
                 :prop="item[basic.keys.propKey]"
             >
-                <span v-if="item[basic.keys.tooltipsKey]" class="tooltips" v-html="item[basic.keys.tooltipsKey]"></span>
+                <div v-if="item[basic.keys.tooltipsKey]" class="tooltips" v-html="item[basic.keys.tooltipsKey]"></div>
             </component>
         </el-form>
     </div>
@@ -52,7 +19,6 @@ props:
 <script type="text/javascript">
     let editors = {}, editorConfigs = {};
 
-    //把editotr/下的所有vue组件存入editors，editors[component.name]=component;
     function importAll (r) {
         r.keys().forEach(key => {
             let editComp = r(key).default;
@@ -62,7 +28,6 @@ props:
 
     importAll(require.context('./editor', true, /index.vue$/));
 
-    //组件名不重复
     function registerEditor(editor) {
         if (editor && editor.name && editor.component) {
             if (editors[editor.name]) {
@@ -90,7 +55,7 @@ props:
                 type: Array,
                 default: []
             },
-            basic: {//项目自定义
+            basic: {
                 type: Object,
                 default: () => {
                     return baseConfig;
@@ -106,7 +71,6 @@ props:
         },
         components: editors,
         methods: {
-            //表单验证
             validate() {
                 let result = false;
                 this.$refs.form.validate(valid => {
@@ -114,7 +78,6 @@ props:
                 });
                 return result;
             },
-            //表单验证
             validateAsync() {
                 let p = new Promise((resolve, reject) => {
                     try {
@@ -128,15 +91,11 @@ props:
                 
                 return p;
             },
-            //初始化表单数据 this.form[property] = value
             getFormModel() {
                 this.items.forEach(item => {
                     this.form[item[this.basic.keys.propKey]] = '';
-                 
-                    
                 })
             },
-            //初始化为空 
             initEditorConfig() {
                 let result = {};
 
@@ -146,23 +105,6 @@ props:
 
                 return result;
             },
-
-            /*result= {
-                alogic-check:{
-                    genDisabled:(...)
-                    genDisplay:(...)                
-                    genOptions:(...)               
-                    genRules: (...)               
-                    genTooltips:(...)                
-                    getter: (...)               
-                    setter:(...)
-                },
-                alogic-daterange: {…}, 
-                alogic-file: {…}, 
-                alogic-htmleditor: {…}, 
-                alogic-image: {…}
-             }               
-            */
             calcConfigForEditor() {
                 // 针对所有的editor都有配置
                 let result = this.initEditorConfig();
@@ -176,7 +118,6 @@ props:
                         }
                     }
                 });
-console.table(result)
                 return result;
             },
             sortItem() {
@@ -218,13 +159,11 @@ console.table(result)
 
 <style lang="scss" scoped>
     .tooltips {
-        color: #ddd;
+        color: #bbb;
         font-size: 12px;
         line-height: 1;
         padding-top: 4px;
-        position: absolute;
-        top: 100%;
-        left: 0;
+        position: relative;
     }
 </style>
 

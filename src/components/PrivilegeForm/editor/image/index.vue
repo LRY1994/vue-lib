@@ -1,50 +1,78 @@
 <template>
     <el-form-item v-if="display" :label="label" :prop="prop" :rules="rules" :ref="formItemRef">
-        <el-upload class="avatar-uploader" action="" :ref="prop" :show-file-list="false" :auto-upload="false" :with-credentials="true" :on-change="handleChange" :before-upload="beforeAvatarUpload" :disabled="disabled">
-            <img v-if="model || inUrl" :src="model || inUrl" class="avatar">
-            <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+
+        <el-button v-if="model || inUrl" type="text" @click="checkoutOrigin">查看原图</el-button>
+        <div v-if="disabled" class="plain" v-bind:style="{width: (targetWidth || 178) + 'px', height: (targetHeight || 178 ) + 'px'}">
+            <img v-if="model || inUrl" :src="model || inUrl" class="avatar" v-bind:style="{width: (targetWidth || 178) + 'px', height: (targetHeight || 178 ) + 'px'}">
+        </div>
+        <el-upload v-else class="avatar-uploader" action="" :ref="prop" :show-file-list="false" :auto-upload="false" :on-change="handleChange">
+            <img v-if="model || inUrl" :src="model || inUrl" class="avatar" v-bind:style="{width: (targetWidth || 178) + 'px', height: (targetHeight || 178 ) + 'px'}">
+            <i v-else class="el-icon-plus avatar-uploader-icon" v-bind:style="{width: (targetWidth || 178) + 'px', height: (targetHeight || 178 ) + 'px', 'line-height': (targetHeight || 170) + 'px'}"></i>
         </el-upload>
-        <slot></slot>
+
+        <div v-show="!disabled">
+            <slot></slot>
+        </div>
+
+
     </el-form-item>
 </template>
 
 <script type="text/javascript">
     import mixin from '../editor.mixin';
+    import options_mixin from '../options.mixin';
     export default {
-        mixins: [mixin],
+        mixins: [mixin, options_mixin],
         name: 'alogic-image',
         data() {
             return {
-                inUrl: ''
+                inUrl: '',
+                base64Code: '',
+                targetWidth: null,
+                targetHeight: null,
             }
         },
         methods: {
             handleChange(file, fileList) {
-                file = file.raw;
-                let reader = new FileReader();
-                reader.onload = (event) => {
-                    this.model = event.target.result;
+                if (this.beforeAvatarUpload(file)) {
+                    file = file.raw;
+                    let reader = new FileReader();
+                    reader.onload = (event) => {
+                        this.base64Code = event.target.result;
 
-                    // 手动触发change事件通知上级form
-                    this.emitChange(this.model);
+                        // 手动触发blur事件保存结果
+                        this.handleBlur({content: file, type: file.type, name: file.name});
+                    };
+                    reader.readAsDataURL(file);
+                }
+            },
+            checkResolution(file) {
+                let image = new Image();
+                image.src = file.url;
+                image.onload = () => {
+                    let naturalWidth = image.width, naturalHeight = image.height;
 
-                    // 手动触发blur事件保存结果
-                    this.handleBlur({content: file, type: file.type, name: file.name});
+                    if (this.targetWidth && this.targetHeight) {
+                        if (naturalWidth != this.targetWidth || naturalHeight != this.targetHeight) {
+                            this.$message.warning(`您上传的图片不满足分辨率: ${this.targetWidth}*${this.targetHeight}。可能在市场中显示变形等问题。`);
+                        }
+                    }
                 };
-                reader.readAsDataURL(file);
             },
             beforeAvatarUpload(file) {
+                let fileRaw = file.raw;
                 //jpg png bmp
-                const isType = (file.type === 'image/jpeg') || (file.type === 'image/png') || (file.type === 'image/bmp');
-                const isLt3M = file.size / 1024 / 1024 <= 3;
+                const isType = (fileRaw.type === 'image/jpeg') || (fileRaw.type === 'image/png') || (fileRaw.type === 'image/bmp');
+                const isLt3M = fileRaw.size / 1024 / 1024 <= 3;
                 if(!isType) {
-                    this.$message.error('上传头像图片只能是 JPG/PNG/BMP格式!');
+                    this.$message.error('上传的图片只能是 JPG/PNG/BMP格式!');
                     return;
                 }
                 if(!isLt3M) {
-                    this.$message.error('上传头像图片大小不能超过 3MB!');
+                    this.$message.error('上传的图片大小不能超过 3MB!');
                     return;
                 }
+                this.checkResolution(file);
                 return isType && isLt3M;
             },
             getValue() {
@@ -63,14 +91,60 @@
                     value
                 };
                 this.config.setter(params).then(data => {
+                    // 手动触发change事件通知上级form
+                    this.model = this.base64Code;
+                    this.emitChange(this.model);
                     this.config.setterCallback && this.config.setterCallback(this.item);
-                });
+                }).catch(err => {
+                    this.model = '';
+                    this.emitChange(this.model);
+                    this.$message.error('上传失败');
+                })
 
                 if (this.$refs[this.formItemRef]) {
                     this.$refs[this.formItemRef].clearValidate();
                 }
 
                 this.$emit('blur', params);
+            },
+            getOptions() {
+                this.config.genOptions(this.item).then(data => {
+                    if (data && data.length > 0) {
+                        data.forEach(item => {
+                            if (item.label == 'width') {
+                                this.targetWidth = parseInt(item.value);
+                            } else {
+                                if (item.label == 'height') {
+                                    this.targetHeight = parseInt(item.value);
+                                }
+                            }
+                        });
+                    }
+                })
+            },
+            checkoutOrigin() {
+                const h = this.$createElement;
+                this.$msgbox({
+                    customClass: 'image-editor-dialog-class',
+                    title: '查看原图',
+                    message: h('img', {
+                        domProps: {
+                            src: this.model || this.inUrl
+                        },
+                        style: {
+                            'max-width': '100%',
+                            'border': '1px solid #ccc'
+                        }
+                    }),
+                    showConfirmButton: false
+                }).then(action => {
+                    this.$message({
+                        type: 'info',
+                        message: 'action: ' + action
+                    });
+                }).catch(action => {
+
+                });
             }
         }
     }
@@ -80,16 +154,15 @@
     .avatar-uploader-icon {
         font-size: 28px;
         color: #8c939d;
-        width: 178px;
-        height: 178px;
-        line-height: 178px;
         text-align: center;
     }
     
     .avatar {
-        width: 178px;
-        height: 178px;
         display: block;
+    }
+
+    .plain {
+        border: 1px solid #eee;
     }
 </style>
 
@@ -104,5 +177,15 @@
     
     .avatar-uploader >>> .el-upload:hover {
         border-color: #409EFF;
+    }
+</style>
+
+<style lang="scss">
+    .image-editor-dialog-class {
+        width: 70%;
+    }
+
+    .image-editor-dialog-class .el-message-box__message {
+        text-align: center;
     }
 </style>

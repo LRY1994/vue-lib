@@ -1,6 +1,7 @@
 <template>
     <el-form-item v-if="display" :label="label" :prop="prop" :rules="rules" :ref="formItemRef">
-        <el-checkbox-group v-model="model" @change="handleChange" :disabled="disabled">
+        <div class="plain" v-if="disabled">{{plainValue}}</div>
+        <el-checkbox-group v-else v-model="model" @change="handleChange">
             <el-checkbox v-for="i in options" :label="i.value" :key="i.value">{{i.label}}</el-checkbox>
         </el-checkbox-group>
         <slot></slot>
@@ -32,6 +33,25 @@
                     this.model = [];
                 }
             }
-        }
+        },
+        computed: {
+            plainValue() {
+                let result = '';
+                this.options.forEach(item => {
+                    if (item.value == this.model) {
+                        result = item.label;
+                    }
+                });
+                return result;
+            }
+        },
     }
 </script>
+
+<style lang="scss" scoped>
+    .plain {
+        padding: 0px 10px;
+        border: 1px solid #eee;
+        min-height: 42px;
+    }
+</style>

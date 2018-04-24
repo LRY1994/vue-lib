@@ -1,7 +1,6 @@
 <!--
 prop:
-    query-items {Array,必填} //查询条件 ,例子见 order_list/list.vue
-        display,prop,editor,label,options{label,value}
+    query-items {Array,必填} //查询条件 ,例子见 demo/QueryAndList.vue
     form-config {Object,选填} //el-form 设置项
 -->
 
@@ -46,9 +45,7 @@ prop:
 <script type="text/javascript">
 
     export default {
-
         props: {
-            //查询条件
             queryItems: {
                 type: Array,
                 required: true
