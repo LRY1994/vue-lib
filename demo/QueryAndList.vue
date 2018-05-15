@@ -3,8 +3,6 @@
         :query-items="queryItems"
         :list-config="listConfig"
         :get-list-func="getListFunc"
-        :before-get="beforeGet"                             
-        :after-get="afterGet"
         :row-template-component="$options.components.RowTemplate">
     </query-and-list>      
 </template>
@@ -15,8 +13,6 @@
     export default {
         data() {
             return {
-                tenantId:this.__tid,
-                getListFunc: this._$http.tenant.orderList,  
                 listConfig:{
                     thead:['商品基本信息','服务商','金额','订单状态','操作'],
                     span:[6,6,6,4,2]
@@ -59,17 +55,11 @@
         },
         components: { QueryAndList ,RowTemplate}, 
         methods:{           
-            beforeGet(paramsPass){
-                let cleanParams = this.filterDataBeforeQuery(paramsPass);
-                const tenantId = this.__tid;
-                let _default = {
-                    id: tenantId                                                                      
-                }
-                let params = Object.assign({},_default,cleanParams);
-                return params;
-                           
+           getListFunc(originParams) {
+                let params = this.handleParams(originParams);
+                return this._$http.manager.orderList(params);
             },
-            filterDataBeforeQuery(obj){
+            handleParams(obj){
                 let nobj={};
                 for(let o in obj){
                     if(o=='state'&&obj[o]=='all') continue
@@ -78,20 +68,17 @@
                         nobj.end = this.$options.filters.dateformat(obj[o][1], 'yyyy-mm-dd HH:MM:ss');
                         continue
                     }
+                    if(o=='area'&&obj[o]){
+                        if(obj[o][0]) nobj.provinceId = obj[o][0].split('-')[0];
+                        if(obj[o][1]!=='all') nobj.cityId =obj[o][1];
+                        continue;
+                    }
                     if(obj[o]!==""){
                         nobj[o] = obj[o];
                     }
-                }
-               
+                    
+                }              
                 return nobj;
-            },
-            afterGet(data) {
-                let result = null;
-                if (data) {
-                    result = data.list;
-                    result.total = data.total;
-                };
-                return result || [];
             }
         }
     }
