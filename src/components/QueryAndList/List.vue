@@ -19,22 +19,23 @@
         </el-col>
     </el-row>
 
-    <p class="loading-icon" v-show="loading"><i class="el-icon-loading"></i>正在努力获取数据......</p>
+    <!--列表内容-->
     <p v-if="!list.length&&!loading" class="none-data">暂无数据</p>
-    <div v-else>                  
-        <!--列表内容-->
-        <template  v-for ="item in list" v-if="!loading">      
-            <component :is="rowTemplateComponent" :item="item" class="list-item" ></component>
+    <div v-else  v-loading="loading">                         
+        <template  v-for ="item in list" >    
+            <div class="list-item" v-if="useSlot">
+                <slot :item="item" name="row"></slot>
+            </div>        
+            <component :is="rowTemplateComponent" :item="item" class="list-item" v-else></component>
         </template> 
     </div>
-
-     
-
+    
     <!--分页-->  
-    <el-pagination align="center"
+    <el-pagination 
+        class="pagination"
         @current-change="handleCurrentChange" 
         @size-change="handleSizeChange" 
-        :current-page="pager.currentPage" 
+        :current-page.sync="pager.currentPage" 
         :page-sizes="pager.sizes" 
         :page-size="pager.limit" 
         :layout="pager.layout" 
@@ -48,7 +49,13 @@
 
 export default {   
     props:{
-        rowTemplateComponent:{require:true},
+        rowTemplateComponent: {
+            type: Object
+        },
+        useSlot: {
+            type: Boolean,
+            default: false
+        },
         listConfig:{
             type:Object,
             required: true
@@ -73,14 +80,15 @@ export default {
             loading:false
         }
     },
-   
-    created(){
-        this.getList();      
-    },
     methods:{      
         //获取列表数据
-        getList(query) {
+        getList(query,reset) {
             this.loading = true;
+            if(reset){
+                this.pager.offset = 0;  
+                this.pager.currentPage = 1;        
+            }
+           
             let params = {
                 offset: this.pager.offset,
                 limit: this.pager.limit,
@@ -90,14 +98,12 @@ export default {
                 this.query =query;//保存起来供翻页用
                 Object.assign(params,query);
             }
-            
+                
             this.getListFunc(params).then(data => {           
                 this.list = data.list;
                 this.pager.total = data.total || 0;  
                 this.loading = false;          
-            });
-
-
+            });           
         },
         //分页
         handleCurrentChange(val) {
@@ -114,14 +120,15 @@ export default {
 <style lang="scss" scoped>
 .list-head{
      padding:10px 25px;
+     padding-left: 33px;
      font-size:14px;
      color: #373d41;
 }
 .list-item{
-    padding:24px 25px;
+    padding:24px 25px ;
     margin-bottom:20px ;
     border-radius:5px;
-    border:1px solid #9e9e9e54;
+    border:1px solid #d3d3d3;
      &:nth-child(3n+0){
         border-left:8px solid #3f81ef;
     }   
@@ -132,12 +139,19 @@ export default {
         border-left:8px solid #00c1de;
     }    
 }
-.none-data,
-.loading-icon{
+.none-data{
     font-size:20px;
-    color: #9e9e9e54;
+    color:#d3d3d3;
     text-align: center;
     margin:20px 0;
 }
+.pagination{
+     text-align: center;
+}
 
+</style>
+<style>
+.footer-style{
+    z-index: 10000!important;
+}
 </style>

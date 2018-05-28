@@ -6,7 +6,6 @@
 *           label,                  {String,必需}    //前端显示的字段名 
 *           prop,                   {String,必需}    //用于请求后台的字段名
 *           editor,                 {String,必需}    //input\daterange\cascader\select
-*           isRquired,              {Boolean,可选}   //后台请求数据是否需要此字段
 *           options:{               {Object,必需}    //editor为select\cascader时的选项
 *               value,
 *               label,
@@ -52,8 +51,7 @@
                     v-if="item.editor == 'cascader'&&item.activeItemChange"
                     v-model="queyForm[item.prop]"
                     :options="item.options"
-                    :props="item.props"
-                    :placeholder="item.label"
+                    :props="item.props"                    
                     @active-item-change="item.activeItemChange">                                     
                 </el-cascader>
                 
@@ -62,8 +60,7 @@
                     v-if="item.editor == 'cascader'&&!item.activeItemChange"
                     v-model="queyForm[item.prop]"
                     :options="item.options"
-                    :props="item.props"
-                    :placeholder="item.label">                                     
+                    :props="item.props">                                     
                 </el-cascader>
 
                 <!--item.editor == 'select'-->
@@ -104,48 +101,69 @@
                 }
             },
         },
+       
         data() {
             return {
                 queyForm: this.getFormModel()
             }
         },
+        mounted(){
+            this.submit();
+        },
+    
         methods: {
             //搜索触发事件
             submit() {
-                this.$emit('search', this.queyForm);
+                this.$emit('search',[this.queyForm,true] );
             },
             //清空筛选条件
             reset() {
                 this.queyForm = this.getFormModel();
                 this.submit();
             },
-            //组装表单
+            
+            /**
+             * 组装表单
+             * check/radio/select都默认第一个值
+             * cascader默认每一级的第一个值
+             * 其余默认为空
+             */
             getFormModel() {
                 if(this.queryItems && this.queryItems.length > 0) {
-                    let result = {},arr= this.queryItems
-                                         
-                    arr.forEach(item => {
-                       // 对checkbox多选框做兼容
-                        if(item.editor == 'check' || item.editor == 'cascader') {
-                            result[item.prop] = []
-                        } else {
-                            result[item.prop] = '';
-                        }
+                    let result = {};
+                                      
+                    this.queryItems.forEach(item => {
+                        switch(item.editor){                           
+                            case 'cascader':{
+                                const children = item.props.children || 'children';  
+                                const value = item.props.value || 'value';   
+                                const label = item.props.label || 'label';                            
 
-                        // 对check和radio, select的表单项进行处理
-                        if (item.editor == 'check' || item.editor == 'radio' || item.editor == 'select') {
-                            if(item.options && item.options.length > 0) {
-                                let tmp = item.options[0].value;
-                                if(item.editor != 'check') {
-                                    result[item.prop] = tmp;//默认第一个
-                                } else {
-                                    if(item.isRequired) {
-                                        result[item.prop] = [tmp];
-                                    }
+                                let tmp = item.options[0],
+                                    val = tmp[value]; 
+                                                           
+                                result[item.prop] = [val];
+                                           
+                                while(tmp[children]&&tmp[children].length){                                   
+                                    tmp = tmp[children];
+                                    val = tmp[0][value];
+                                    result[item.prop].push(val);
                                 }
-                            };
+                                break;
+                            }
+                            case 'check':{
+                                 result[item.prop] = [item.options[0].value];
+                                 break;
+                            }
+                            case 'radio':
+                            case 'select':{
+                                result[item.prop] = item.options[0].value;
+                                 break;
+                            }
+                            default:{
+                                result[item.prop]= '';
+                            }
                         }
-                        
                     });
                    
                     return result;
@@ -157,9 +175,9 @@
 </script>
 <style lang="scss" scoped>
 .query-box{
-    padding: 25px;
+    padding: 15px 15px 10px 32px;
     border-radius:5px;
-    border:1px solid #9e9e9e54;
+    border:1px solid #d3d3d3;
     .el-form-item{
         margin-bottom: 5px;
     }

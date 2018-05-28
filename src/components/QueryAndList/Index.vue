@@ -13,7 +13,7 @@
 <template>
     <div>
         <!--查询搜索组件-->
-        <query
+        <query 
             :query-items="queryItems" 
             @search="search">
         </query>
@@ -22,7 +22,11 @@
         <list ref="List"
             :list-config= "listConfig"
             :get-list-func = "getListFunc"
-            :row-template-component="rowTemplateComponent">       
+            :row-template-component="rowTemplateComponent"
+            :use-slot="useSlot">   
+            <div slot="row" slot-scope="scope" v-if="useSlot">
+                <slot name="row" :item="scope.item"></slot>
+            </div> 
         </list>
 
     </div>
@@ -34,10 +38,12 @@
     export default {
         components: {Query,List},
         props: {    
-            rowTemplateComponent:{required:true},        
             queryItems: {
                 type: Array,
                 required: true
+            },
+            rowTemplateComponent: {
+                type: Object
             },
             listConfig: {
                 thead:{
@@ -53,12 +59,16 @@
             getListFunc: {
                 type: Function,
                 required: true
+            },
+            useSlot: {
+                type: Boolean,
+                default: false
             }
         },
         methods: {
             //查询
-            search(query) {
-                this.$refs['List'].getList(query);
+            search(args) {
+                this.$refs['List'].getList(args[0],args[1]);
             },
         }
     }
