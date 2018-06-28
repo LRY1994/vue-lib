@@ -6,7 +6,13 @@
             </div>
             <el-tabs v-else value="first" type="border-card">
                 <el-tab-pane label="编写" name="first">
-                    <quill-editor :id="prop" class="my-html-editor" :options="quillOptions" @change="handleChange" @focus="handleFocus" v-model="model" @blur="handleEditorBlur">
+                    <quill-editor :id="prop" 
+                        class="my-html-editor" 
+                        :options="quillOptions"
+                        @change="handleChange" 
+                        @focus="handleFocus" 
+                        v-model="model" 
+                        @blur="handleEditorBlur">
                     </quill-editor>
                 </el-tab-pane>
                 <el-tab-pane label="预览" name="second">
@@ -39,7 +45,10 @@
                 isFocused: false,
                 quillOptions: {
                     modules: {
-                        toolbar:  [['bold', 'italic', 'underline', 'strike'],[{ 'header': 2 }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['image'], ['clean']]
+                        toolbar:  [
+                            ['bold', 'italic', 'underline', 'strike'],
+                            [{ 'header': 2 }],
+                             [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['image'], ['clean']]
                     }
                 }
             }
