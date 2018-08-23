@@ -1,13 +1,15 @@
 <script>
 export default {
-    data(){
-        var userClass = {//这个要参照SVG属性
-            /**shapeStyle
-             * fill:填充的背景颜色
+data(){
+        /*参考http://resources.jointjs.com/docs/jointjs/v2.1/joint.html#dia.attributes
+        */
+        var userClass = {
+            /** fill:填充的背景颜色
                 stroke: 边框颜色
                 strokeWidth: 边框宽度
-                rx: 圆角
-                ry: 
+                rx: x圆角
+                ry: y圆角
+                等等
              */
             shapeStyle:{//矩形样式
                 fill:{
@@ -21,24 +23,26 @@ export default {
                 ry:15
             },
             /**
-             * textStyle
-             *  fontWeight
-             *  fontSize
-             * 
+             *  fontWeight/fontSize/fontFamily/fontStyle/stroke/fill等
              */
             textStyle:{//文本样式
-                fontWeight:'bold'
+                fontStyle:'italic',
+                fontWeight:'bold',
+                fill       : '#fff'
             }    
         };
+        var img = require('@/assets/avatar-place.png');
         return{
+           show:false,
+           
             graphData :{
                 node:{
-                    '100':{text:'用户提交资料',category:userClass},
+                    '100':{text:'用户提交资料',category:userClass,type:'shape'},
                     '101':{text:'用户完善资料',category:userClass},
                     '102':{text:'用户确认完成',category:userClass},
                     '103':{text:'用户撤销',category:userClass},
 
-                    '200':{text:'供应商驳回'},
+                    '200':{text:'供应商驳回',type:'image',src:img},
                     '201':{text:'供应商接单'},
                     '202':{text:'供应商完工'},
                     '203':{text:'等待供应商处理'},

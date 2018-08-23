@@ -1,19 +1,16 @@
+/** 使用方法
+<component :graph-data="graphData" :paper-h="200" :paper-w="200"> </component>
+ */
 <template>
 <div id="container">
-  <p style="background-color:#EEEEEE;margin:0;padding:5px;font-size:0.9em">
-    您当前处于 <span class="tip">用户提交资料</span> 步骤 
-    下一步等待<span class="tip">供应商接单</span>
-    <el-button type="text" v-if="show===false" @click="show=true">展开</el-button>
-    <el-button type="text" v-else @click="show=false">收起</el-button>
-    
-  </p>
-    <div id="myholder" v-show="show"></div>
+    <div id="myholder"></div>
 </div>
 </template>
-
 <script>
+var img = require('./img.png');
 window.joint=require('jointjs');
-var Shape = joint.dia.Element.define('default.Rectangle', {      
+//矩形/椭圆
+var JShape = joint.dia.Element.define('default.Rectangle', {      
         attrs: {  
             rect: {
                 refWidth: '100%',
@@ -36,7 +33,7 @@ var Shape = joint.dia.Element.define('default.Rectangle', {
                 refY: '50%',                               
                 textVerticalAnchor: 'middle',
                 textAnchor: 'middle',
-                fontSize: 10           
+                fontSize: 12           
             }
          }                    
     }, 
@@ -56,26 +53,59 @@ var Shape = joint.dia.Element.define('default.Rectangle', {
         }
     }
 );
+//图片
+var JImage = joint.dia.Element.define('Image',{
+    attrs:{
+        image:{
+            xlinkHref:''
+        },
+        text: {
+                ref:'image',              
+                refX: '50%',
+                refY: '110%',                               
+                textVerticalAnchor: 'middle',
+                textAnchor: 'middle',
+                fontSize: 12           
+        }
+    }},{
+         markup: '<image/><text/>',
+         setText: function(text) {                    
+            return this.attr('text/text', text || '');
+        },
+        setImage:function(opt){
+            let newstyle = Object.assign({},this.attr('image'),opt);
+            return this.attr('image',newstyle)
+        },
+        
+        setTextStyle:function(textStyle){
+            let newstyle = Object.assign({},this.attr('text'),textStyle);
+            return this.attr('text',newstyle)
+        }
+    })
 
-var Link = joint.dia.Link.define('default.Link', {
+
+
+var JLink = joint.dia.Link.define('default.Link', {
         attrs: {
             '.connection': {
                 stroke: '#2F4F4F',//线
                 strokeWidth: 1,
+                fill:'#fff',
                 pointerEvents: 'none',
                 targetMarker: {//箭头
                     type: 'path',
                     fill: '#2F4F4F',//填充颜色
                     stroke: '#2F4F4F',//边框颜色
                     strokeWidth:'1',
-                    d: 'M 2 -2 0 0 2 2 z'//形状
+                    d: 'M -3 0 2 2 0 0 2 -2 -3 0 z'//形状
                 }
             }
         },
         connector: {
-            name: 'rounded'
+            name: 'smooth'
+            // name:'rounded'
         },
-        z: -1,
+        z: -1, //make sure all links are displayed under the elements
         weight: 1,
         minLen: 1,
         labelPosition: 'c',
@@ -159,84 +189,119 @@ export default {
     data(){
         return{
             graph:null,
-            paper:null,
-            show:true
+            paper:null
         }       
     },
     props:{
-        graphData:{
+        graphData:{//点边数据
             type:Object,
             required:true
-        }
+        },
+      
+        paperH:{required:false},//画布高度
+        paperW:{required:false},//画布宽度
+        
     },
     mounted(){
-        let w = document.getElementById('container').width ; 
+        //默认宽度是容器100%,高度为220px;
+        let w = document.getElementById('container').offsetWidth-120 ,h=220;
+        if(this.paperH){ h = this.paperH}
+        if(this.paperW){ w = this.paperW}
+        
         this.graph = new joint.dia.Graph;
         this.paper = new joint.dia.Paper({
             el: document.getElementById('myholder'),
             width: w,
-            height: 250,         
+            height: h,         
             model: this.graph,
             elementView: ElementView,//禁止拖拽
             linkView:LinkView//禁止拖拽
         });
+        
         this.layout();
+        
     },
     methods:{
+        //创建节点
+        makeElement(type,id,label){
+            let size;
+            switch(type){
+                case 'image':{
+                    return new JImage({id}).setText(label);
+                    break;
+                }
+                case 'shape':
+                default:{
+                    size = this.getWidthandHeight(label);
+                    return new JShape({id,size}).setText(label);
+                    break;
+                }
+            }
+        },
+        //计算矩形的大小
         getWidthandHeight(label){
             let maxLineLength = _.max(label.split('\n'), function(l) { return l.length; }).length,
 
-            // Compute width/height of the rectangle based on the number
-            // of lines in the label and the letter size. 0.6 * letterSize is
-            // an approximation of the monospace font letter width.
-             letterSize = 8,
+            /* Compute width/height of the rectangle based on the number
+              of lines in the label and the letter size. 0.6 * letterSize is
+              an approximation of the monospace font letter width.
+             */
+             letterSize = 10,
              width = 2 * (letterSize * (0.6 * maxLineLength + 1)),
              height = 2 * ((label.split('\n').length + 1) * letterSize);
             return {width,height}
         },
+        /*
+        * 布局参数，可参考http://resources.jointjs.com/docs/jointjs/v2.1/joint.html#layout.DirectedGraph
+        */
         getLayoutOptions() {
             return {
-                // setVertices: false,
-                // setLabels: false,
-                // ranker:'longer-path',//'tight-tree'/'network-simplex',
+                setVertices: true,
+                setLabels: true,
+                ranker:'network-simplex',
                 rankDir: 'LR',
-                align: 'UR',
-                rankSep:0,
-                edgeSep:0,
-                nodeSep:0,
+                align: 'DR',
+                rankSep:20,
+                edgeSep:20,
+                nodeSep:20,
             };
         },
         buildGraphFromAdjacencyList(adjacencyList) {
-            let elements = [],links = [],obj,size,node;
+            let elements = [],links = [],obj,size,node,edge;
             const _this=this;
             const map=this.graphData.node;
 
             Object.keys(adjacencyList).forEach(function(parentId) {
-                // Add element
-
                 obj =map[parentId];
-                size = _this.getWidthandHeight(obj.text);
-                node =new Shape({id:parentId,size:size}).setText(obj.text);
+               
+                if(obj.type===undefined){ obj.type='shape'};//默认创建矩形
 
+                node = _this.makeElement(obj.type,parentId,obj.text);
+
+                if(obj.type==='image'){
+                    node = node.attr('image/xlinkHref',obj.src);
+                }
+                //如果有样式，就覆盖默认样式
                 if(obj.category&&obj.category.shapeStyle){
                     node = node.setShapeStyle(obj.category.shapeStyle);
                 }
                 if(obj.category&&obj.category.textStyle){
                     node = node.setTextStyle(obj.category.textStyle);
                 }
-
+                // Add element
                 elements.push(node);
                 
                 // Add links
                 adjacencyList[parentId].forEach(function(childId) {
                     links.push(
-                        new Link().connect(parentId, childId)// .setLabelText(parentLabel + '-' + childLabel)                                         
+                        new JLink().connect(parentId, childId)// .setLabelText(parentLabel + '-' + childLabel)                                         
                     );
                 });
             });
 
             return elements.concat(links);
         },
+        //构建布局
         layout() {            
             let cells = this.buildGraphFromAdjacencyList(this.graphData.edge);    
             this.graph.resetCells(cells);
@@ -247,15 +312,10 @@ export default {
 </script>
 
 <style>
-#myholder {
-    border: 1px solid lightgray;
-    margin-bottom:20px;
-    padding-left:20px
+#container{
+    border:1px solid #d3d3d3;
 }
-.tip{
-  color:#9ACD32;
-  font-size:0.9em;
-  font-weight:bold;
-  padding:5px;
+#myholder{   
+     margin: 0 auto;
 }
 </style>
