@@ -30,6 +30,7 @@
                 base64Code: '',
                 targetWidth: null,
                 targetHeight: null,
+                limitHeight: document.body.clientHeight * 0.8
             }
         },
         methods: {
@@ -54,7 +55,11 @@
 
                     if (this.targetWidth && this.targetHeight) {
                         if (naturalWidth != this.targetWidth || naturalHeight != this.targetHeight) {
-                            this.$message.warning(`您上传的图片不满足分辨率: ${this.targetWidth}*${this.targetHeight}。可能在市场中显示变形等问题。`);
+                            this.$message({
+                                type: 'warning',
+                                message: `您上传的图片不满足分辨率: ${this.targetWidth}*${this.targetHeight}。可能在市场中显示变形等问题。`,
+                                customClass: 'image-warning-class'
+                            });
                         }
                     }
                 };
@@ -127,15 +132,33 @@
                 this.$msgbox({
                     customClass: 'image-editor-dialog-class',
                     title: '查看原图',
-                    message: h('img', {
-                        domProps: {
-                            src: this.model || this.inUrl
-                        },
-                        style: {
-                            'max-width': '100%',
-                            'border': '1px solid #ccc'
-                        }
-                    }),
+                    message: h('el-scrollbar', {
+                            props: {
+                                'wrap-style': 'overflow-x:hidden;'
+                            },
+                            style: {
+                                'height': this.limitHeight + 'px'
+                            }
+                        }, [
+                            h('div', {
+                                style: {
+                                    'min-height': (this.limitHeight - 100) + 'px',
+                                    'display': 'flex',
+                                    'align-items': 'center'
+                                }
+                            }, [
+                                h('img', {
+                                    domProps: {
+                                        src: this.model || this.inUrl
+                                    },
+                                    style: {
+                                        'margin': '0 auto',
+                                        'max-width': '100%',
+                                        'border': '1px solid #ccc'
+                                    }
+                                })
+                            ])
+                        ]),
                     showConfirmButton: false
                 }).then(action => {
                     this.$message({
@@ -151,6 +174,10 @@
 </script>
 
 <style lang="scss" scoped>
+	.avatar-uploader {
+		line-height: initial;
+	}
+	
     .avatar-uploader-icon {
         font-size: 28px;
         color: #8c939d;
@@ -178,6 +205,7 @@
     .avatar-uploader >>> .el-upload:hover {
         border-color: #409EFF;
     }
+
 </style>
 
 <style lang="scss">
@@ -185,7 +213,14 @@
         width: 70%;
     }
 
+    .image-editor-dialog-class .el-scrollbar__wrap {
+        height: 100%;
+    }
     .image-editor-dialog-class .el-message-box__message {
         text-align: center;
+    }
+    
+    .image-warning-class.el-message--warning {
+        top: 80px;
     }
 </style>

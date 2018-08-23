@@ -37,7 +37,7 @@
         mixins: [mixin, rangeMixin],
         name: 'alogic-timerange',
         methods: {
-            // 因为独有的编码和解码，所以不能重复利用mixin了
+            // 因为独有格式，所以不能重复利用mixin了
             decode(r) {
                 let to, from;
                 if (r) {

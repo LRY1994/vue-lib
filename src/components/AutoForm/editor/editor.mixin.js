@@ -14,9 +14,14 @@ export default {
             })
         },
         getDisabled() {
+        	//支持布尔类型
+        	if(typeof this.config.genDisabled === 'boolean') {
+        		this.disabled = this.config.genDisabled;
+        	} else {
             this.config.genDisabled(this.item).then(data => {
-                this.disabled = data;
-            })
+            	this.disabled = data;
+      			})
+        	}
         },
         getRules() {
             this.config.genRules(this.item).then(data => {
@@ -24,31 +29,38 @@ export default {
             })
         },
         getDisplay() {
+         	//支持布尔类型
+        	if(typeof this.config.genDisplay === 'boolean') {
+        		this.display = this.config.genDisplay;
+        	} else {
             this.config.genDisplay(this.item).then(data => {
                 this.display = data;
             })
+        	}
         },
         handleBlur() {
-            debugger
-            let params = {
-                item: this.item,
-                value: this.model
-            }, p;
-
-            p = this.validate();
-            p.then(valid => {
-                if (valid) {
-                    this.config.setter(params).then(data => {
-                        this.config.setterCallback && this.config.setterCallback(this.item);
-                    });
-
-                    if (this.$refs[this.formItemRef]) {
-                        this.$refs[this.formItemRef].clearValidate();
-                    }
-                }
-            })
-
-            this.$emit('blur', this.model);
+			//model为null/undfined/''时，不触发
+			if(!!this.model) {
+	            let params = {
+	                item: this.item,
+	                value: this.model
+	            }, p;
+	
+	            p = this.validate();
+	            p.then(valid => {
+	                if (valid && this.config.setter) {
+	                    this.config.setter(params).then(data => {
+	                        this.config.setterCallback && this.config.setterCallback(this.item);
+	                    });
+	
+	                    if (this.$refs[this.formItemRef]) {
+	                        this.$refs[this.formItemRef].clearValidate();
+	                    }
+	                }
+	            })
+	
+	            this.$emit('blur', this.model);
+            }
         },
         validate() {
             const descriptor = {};

@@ -1,5 +1,9 @@
-<template>
-    <awesome-form ref="dyform" :items="items" :config="config"></awesome-form>
+<template>    
+    <awesome-form ref="dyform" :items="items" :config="config">
+        <template slot="Party_A_address" slot-scope="{item, form}">
+            <address-chooser :item="item" :state="curState" v-model="form[item.property]" :worksheet-id="worksheetId"></address-chooser>
+        </template>
+    </awesome-form>
 </template>
 
 <script type="text/javascript">

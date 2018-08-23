@@ -3,7 +3,7 @@
         <div v-if="disabled" class="plain">
             <span v-if="fileInfo && fileInfo.fileName">
                 <span v-if="fileInfo.fileName"><i class="el-icon-document"></i>{{fileInfo.fileName}}
-                <span class="fileinfo">{{fileInfo.fileSize | fileSizeFilter}}</span> 
+                <span class="fileinfo">{{fileInfo.fileSize | fileSizeFilter}}</span> <span class="fileinfo">{{fileInfo.createDate|dateformat}}</span>
                 <a :href="fileInfo.downloadLink" class="fileinfo" :download="fileInfo.fileName"><el-button type="text">下载</el-button></a>
                 </span>
             </span>
@@ -12,10 +12,8 @@
             <el-upload class="upload-demo" 
                 :ref="prop" 
                 drag 
-                action=""
-                :on-change="handleChange" 
-                :auto-upload="false" 
-                :show-file-list="false" 
+                :action="config.setter(item)"
+                :on-success="handleFileSuccess"
                 >
                 <i class="el-icon-upload"></i>
                 <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
@@ -23,7 +21,7 @@
 
             <span v-if="fileInfo">
                 <span v-if="fileInfo.fileName"><i class="el-icon-document"></i>{{fileInfo.fileName}}
-                <span class="fileinfo">{{fileInfo.fileSize | fileSizeFilter}}</span> 
+                <span class="fileinfo">{{fileInfo.fileSize | fileSizeFilter}}</span> <span class="fileinfo">{{fileInfo.createDate|dateformat}}</span>
                 <a :href="fileInfo.downloadLink" class="fileinfo" :download="fileInfo.fileName"><el-button type="text">下载</el-button></a>
                 </span>
             </span>
@@ -43,62 +41,37 @@
         data() {
             return {
                 fileInfo: '',
-                fileObj: null
             }
         },
         methods: {
-            handleChange(file, fileList) {
-                this.fileInfo = {
-                    fileName: file.name,
-                    fileSize: file.size,
-                    downloadLink: file.url
-                };
-                file = file.raw;
-                this.fileObj = file;
-                this.handleBlur({
-                    content: file, 
-                    type: file.type, 
-                    name: file.name,
-                });
-            },
-            getValue() {
-                this.config.getter(this.item).then(data => {
-                    this.fileInfo = data;
-                    this.emitChange(this.fileInfo);
-                })
-            },
-            handleBlur(value) {
-                let params = {
-                    item: this.item,
-                    value
-                };
-                this.config.setter(params).then(data => {
-                    this.model = this.fileObj;
-                    this.emitChange(this.model);
+    		handleFileSuccess(res, file) {
+				if(res.code == 'core.ok') {
+		            //清除上传的队列
+					this.$refs[this.prop].clearFiles();
+                	//上传成功后显示文件信息
+					this.fileInfo = {
+			            fileName: file.name,
+		                fileSize: file.size,
+		                downloadLink: file.url,
+		                createDate: new Date().getTime()
+					}
+					this.emitChange(res.data.fileId);
                     this.config.setterCallback && this.config.setterCallback(this.item);
-                });
-
-                if (this.$refs[this.formItemRef]) {
-                    this.$refs[this.formItemRef].clearValidate();
-                }
-
-                this.$emit('blur', params);
-            }
-        },
-        filters: {
-            fileSizeFilter(input) {
-                let result = '-';
-                let kb = 1000, mb = 1000*1000, gb = 1000*1000*1000;
-                if(input < kb) {
-                    result = input+'B';
-                }else if(input >= kb && input < mb) {
-                    result = Math.round(input/kb) + 'KB';
-                }else if(input >= mb && input < gb) {
-                    result = (input/mb).toFixed(2) + 'MB';
-                }else{
-                    result = (input/gb).toFixed(2) + 'GB';
-                }
-                return result;
+                    if (this.$refs[this.formItemRef]) {
+                    	this.$refs[this.formItemRef].clearValidate();
+                	}
+				} else {
+					this.$message.error(res.reason)
+				}
+			},
+            getValue() {
+            	//item.value即fileId存在，再获取fileId的信息
+            	if(this.item.value) {
+	                this.config.getter(this.item).then(data => {
+                    	this.fileInfo = data;
+                    	this.emitChange(this.fileInfo);
+                	})
+            	}
             }
         }
     }
