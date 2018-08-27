@@ -1,5 +1,15 @@
+<template>
+<div>
+    <process-joint :graph-data="graphData" ></process-joint>
+    <!--或者-->
+    <process-joint :graph-data="graphData" paper-data="paperData"> </process-joint>   
+</div>
+
+</template>
 <script>
-export default {
+import processJoint from './index'
+export default{
+  components:{processJoint},
 data(){
         /*参考http://resources.jointjs.com/docs/jointjs/v2.1/joint.html#dia.attributes
         */
@@ -11,7 +21,7 @@ data(){
                 ry: y圆角
                 等等
              */
-            shapeStyle:{//矩形样式
+            outerStyle:{//矩形样式
                 fill:{
                     type: 'linearGradient',
                     stops: [
@@ -31,10 +41,22 @@ data(){
                 fill       : '#fff'
             }    
         };
+        var imgClass ={
+            outerStyle:{
+                width:10,
+                height:10
+            }
+        }
         var img = require('@/assets/avatar-place.png');
         return{
            show:false,
-           
+            paperData:{
+                width:600,
+                height:100,
+                layoutOptions:{//参考http://resources.jointjs.com/docs/jointjs/v2.1/joint.html#layout.DirectedGraph
+                    setVertices: true,
+                }
+            },
             graphData :{
                 node:{
                     '100':{text:'用户提交资料',category:userClass,type:'shape'},
@@ -43,7 +65,7 @@ data(){
                     '103':{text:'用户撤销',category:userClass},
 
                     '200':{text:'供应商驳回',type:'image',src:img},
-                    '201':{text:'供应商接单'},
+                    '201':{text:'供应商接单',type:'image',src:img,category:'imgClass'},
                     '202':{text:'供应商完工'},
                     '203':{text:'等待供应商处理'},
 

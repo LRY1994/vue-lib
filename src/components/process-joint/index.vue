@@ -1,5 +1,9 @@
-/** 使用方法
-<component :graph-data="graphData" :paper-h="200" :paper-w="200"> </component>
+/** 使用方法见example.vue
+import func from './vue-temp/vue-editor-bridge';
+
+graphData：必须，图数据 
+paperData：可选，画布宽度、高度、布局配置
+
  */
 <template>
 <div id="container">
@@ -7,10 +11,9 @@
 </div>
 </template>
 <script>
-var img = require('./img.png');
 window.joint=require('jointjs');
 //矩形/椭圆
-var JShape = joint.dia.Element.define('default.Rectangle', {      
+var JJShape = joint.dia.Element.define('default.Rectangle', {      
         attrs: {  
             rect: {
                 refWidth: '100%',
@@ -29,6 +32,7 @@ var JShape = joint.dia.Element.define('default.Rectangle', {
                 ry: 5
             },
             text: {
+                ref:"rect",
                 refX: '50%',
                 refY: '50%',                               
                 textVerticalAnchor: 'middle',
@@ -42,8 +46,8 @@ var JShape = joint.dia.Element.define('default.Rectangle', {
          setText: function(text) {                    
             return this.attr('text/text', text || '');
         },
-        setShapeStyle:function(shapeStyle){
-            let newstyle = Object.assign({},this.attr('rect'),shapeStyle);
+        setOuterStyle:function(style){
+            let newstyle = Object.assign({},this.attr('rect'),style);
             return this.attr('rect',newstyle)
         },
         
@@ -54,13 +58,13 @@ var JShape = joint.dia.Element.define('default.Rectangle', {
     }
 );
 //图片
-var JImage = joint.dia.Element.define('Image',{
+var JJImage = joint.dia.Element.define('Image',{
     attrs:{
         image:{
             xlinkHref:''
         },
         text: {
-                ref:'image',              
+                ref:"image",              
                 refX: '50%',
                 refY: '110%',                               
                 textVerticalAnchor: 'middle',
@@ -72,8 +76,11 @@ var JImage = joint.dia.Element.define('Image',{
          setText: function(text) {                    
             return this.attr('text/text', text || '');
         },
-        setImage:function(opt){
-            let newstyle = Object.assign({},this.attr('image'),opt);
+        setHref:function(href){
+            return this.attr('image/xlinkHref', href || '');
+        },
+        setOuterStyle:function(style){
+            let newstyle = Object.assign({},this.attr('image'),style);
             return this.attr('image',newstyle)
         },
         
@@ -84,8 +91,8 @@ var JImage = joint.dia.Element.define('Image',{
     })
 
 
-
-var JLink = joint.dia.Link.define('default.Link', {
+//连线
+var JJLink = joint.dia.Link.define('default.Link', {
         attrs: {
             '.connection': {
                 stroke: '#2F4F4F',//线
@@ -157,18 +164,21 @@ var JLink = joint.dia.Link.define('default.Link', {
         }
     });
 
-
+//布局
+var layoutOptions ={
+                setVertices: true,
+                setLabels: true,
+                ranker:'network-simplex',
+                rankDir: 'LR',
+                align: 'DR',
+                rankSep:20,
+                edgeSep:20,
+                nodeSep:20,
+            };
 
 var ElementView = joint.dia.ElementView.extend({
-        pointerdown: function () {
-
-            // this._click = true;
-            // joint.dia.ElementView.prototype.pointerdown.apply(this, arguments);
-        },
-        pointermove: function(evt, x, y) {
-            // this._click = false;
-            // joint.dia.ElementView.prototype.pointermove.apply(this, arguments);
-        },
+        pointerdown: function () {},
+        pointermove: function(evt, x, y) {},
         pointerup: function (evt, x, y) {
             // if (this._click) {
             //     // triggers an event on the paper and the element itself
@@ -197,16 +207,18 @@ export default {
             type:Object,
             required:true
         },
-      
-        paperH:{required:false},//画布高度
-        paperW:{required:false},//画布宽度
-        
+        paperData:{
+            width:{type:String||Number},//画布宽度
+            height:{type:String||Number},//画布高度
+            layoutOptions:{type:Object},//布局
+            required:false
+        }
     },
     mounted(){
         //默认宽度是容器100%,高度为220px;
         let w = document.getElementById('container').offsetWidth-120 ,h=220;
-        if(this.paperH){ h = this.paperH}
-        if(this.paperW){ w = this.paperW}
+        if(this.paperData&&this.paperData.height){ h = this.paperData.height}
+        if(this.paperData&&this.paperData.width){ w = this.paperData.width}
         
         this.graph = new joint.dia.Graph;
         this.paper = new joint.dia.Paper({
@@ -223,20 +235,29 @@ export default {
     },
     methods:{
         //创建节点
-        makeElement(type,id,label){
-            let size;
-            switch(type){
+        makeElement(id,obj){
+            let size,node;
+            switch(obj.type){
                 case 'image':{
-                    return new JImage({id}).setText(label);
+                    node = new JJImage({id}).setHref(obj.src).setText(obj.text);
                     break;
                 }
                 case 'shape':
                 default:{
-                    size = this.getWidthandHeight(label);
-                    return new JShape({id,size}).setText(label);
+                    size = this.getWidthandHeight(obj.text);
+                    node = new JJShape({id,size}).setText(obj.text);
                     break;
                 }
             }
+            
+            //如果有样式，就覆盖默认样式
+            if(obj.category&&obj.category.outerStyle){
+                node = node.setOuterStyle(obj.category.outerStyle);
+            }
+            if(obj.category&&obj.category.textStyle){
+                node = node.setTextStyle(obj.category.textStyle);
+            }
+            return node;
         },
         //计算矩形的大小
         getWidthandHeight(label){
@@ -255,46 +276,24 @@ export default {
         * 布局参数，可参考http://resources.jointjs.com/docs/jointjs/v2.1/joint.html#layout.DirectedGraph
         */
         getLayoutOptions() {
-            return {
-                setVertices: true,
-                setLabels: true,
-                ranker:'network-simplex',
-                rankDir: 'LR',
-                align: 'DR',
-                rankSep:20,
-                edgeSep:20,
-                nodeSep:20,
-            };
+            if(this.paperData&&this.paperData.layoutOptions){return this.paperData.layoutOptions;}
+            else return layoutOptions;
         },
         buildGraphFromAdjacencyList(adjacencyList) {
-            let elements = [],links = [],obj,size,node,edge;
+            let elements = [],links = [],obj;
             const _this=this;
             const map=this.graphData.node;
 
             Object.keys(adjacencyList).forEach(function(parentId) {
                 obj =map[parentId];
-               
-                if(obj.type===undefined){ obj.type='shape'};//默认创建矩形
 
-                node = _this.makeElement(obj.type,parentId,obj.text);
-
-                if(obj.type==='image'){
-                    node = node.attr('image/xlinkHref',obj.src);
-                }
-                //如果有样式，就覆盖默认样式
-                if(obj.category&&obj.category.shapeStyle){
-                    node = node.setShapeStyle(obj.category.shapeStyle);
-                }
-                if(obj.category&&obj.category.textStyle){
-                    node = node.setTextStyle(obj.category.textStyle);
-                }
                 // Add element
-                elements.push(node);
+                elements.push(_this.makeElement(parentId,obj));
                 
                 // Add links
                 adjacencyList[parentId].forEach(function(childId) {
                     links.push(
-                        new JLink().connect(parentId, childId)// .setLabelText(parentLabel + '-' + childLabel)                                         
+                        new JJLink().connect(parentId, childId)// .setLabelText(parentLabel + '-' + childLabel)                                         
                     );
                 });
             });
